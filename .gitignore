@@ -1,0 +1,73 @@
+# =============================
+# ASP.NET Core / Visual Studio
+# =============================
+
+# Build results
+bin/
+obj/
+out/
+
+# Visual Studio / Rider / VS Code
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# =============================
+# NuGet
+# =============================
+*.nupkg
+*.snupkg
+*.nuspec
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# =============================
+# ASP.NET Core
+# =============================
+appsettings.*.json
+*.db
+*.sqlite
+*.log
+
+# =============================
+# React / Node
+# =============================
+
+# Node modules
+node_modules/
+jspm_packages/
+
+# Build outputs
+build/
+dist/
+tmp/
+.cache/
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Yarn
+yarn-error.log
+.pnp.*
+.yarn-integrity
+
+# npm
+package-lock.json
+
+# =============================
+# Others
+# =============================
+*.swp
+*.sublime-workspace
+*.sublime-project
+*.idea/
