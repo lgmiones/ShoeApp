@@ -15,7 +15,7 @@ namespace ShoeShopAPI.Controllers
         public async Task<IActionResult> GetCart() => Ok(await _service.GetCartAsync());
 
         [HttpPost]
-        public async Task<IActionResult> AddToCart(CartItemDto dto) => Ok(await _service.AddToCartAsync(dto));
+        public async Task<IActionResult> AddToCart(CartItemCreateDto dto) => Ok(await _service.AddToCartAsync(dto));
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> RemoveFromCart(int id)

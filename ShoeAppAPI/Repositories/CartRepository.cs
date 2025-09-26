@@ -17,6 +17,7 @@ namespace ShoeShopAPI.Repositories
         {
             _context.CartItems.Add(item);
             await _context.SaveChangesAsync();
+            await _context.Entry(item).Reference(i => i.Shoe).LoadAsync();
             return item;
         }
 

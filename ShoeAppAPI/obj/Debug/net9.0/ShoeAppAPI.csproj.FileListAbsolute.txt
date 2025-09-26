@@ -165,3 +165,4 @@ C:\Users\TRAINEE-MIONES\ShoeShopApp\ShoeAppAPI\obj\Debug\net9.0\refint\ShoeAppAP
 C:\Users\TRAINEE-MIONES\ShoeShopApp\ShoeAppAPI\obj\Debug\net9.0\ShoeAppAPI.pdb
 C:\Users\TRAINEE-MIONES\ShoeShopApp\ShoeAppAPI\obj\Debug\net9.0\ShoeAppAPI.genruntimeconfig.cache
 C:\Users\TRAINEE-MIONES\ShoeShopApp\ShoeAppAPI\obj\Debug\net9.0\ref\ShoeAppAPI.dll
+C:\Users\TRAINEE-MIONES\ShoeShopApp\ShoeAppAPI\obj\Debug\net9.0\ShoeAppAPI.sourcelink.json
