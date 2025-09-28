@@ -2,6 +2,7 @@ namespace ShoeShopAPI.DTOs
 {
     public class CartItemDto
     {
+        public int Id { get; set; }
         public int ShoeId { get; set; }
         public int Quantity { get; set; }
         public string Name { get; set; } = "";     // safe default for output

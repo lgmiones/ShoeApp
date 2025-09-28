@@ -14,7 +14,7 @@ export const addToCart = async (shoeId, quantity = 1) => {
 
 // RemoveFromCart requires cart item id, but API doesn't return it -> cannot implement reliably.
 // Keeping this for future if backend returns an id.
-export const removeFromCartById = async (cartItemId) => {
+export const deleteCartItem = async (cartItemId) => {
   const res = await api.delete(`/Cart/${cartItemId}`);
   return res.status === 204;
 };

@@ -25,7 +25,7 @@ export default function OrdersPage() {
 
   const remove = async () => {
     if (!deleting) return;
-    await deleteOrder(deleting.Id);
+    await deleteOrder(deleting.id); // ✅ backend uses "id"
     success("Order deleted");
     setDeleting(null);
     await fetchOrders();
@@ -41,29 +41,51 @@ export default function OrdersPage() {
       ) : (
         <div className="space-y-3">
           {orders.map((o) => (
-            <div key={o.Id} className="rounded-xl border bg-white p-4">
+            <div key={o.id} className="rounded-xl border bg-white p-4 shadow-sm">
               <div className="flex items-center justify-between">
-                <p className="font-semibold">Order #{o.Id}</p>
+                <p className="font-semibold">Order #{o.id}</p>
                 <div className="flex items-center gap-3">
                   <p className="text-sm text-gray-500">
-                    {o.CreatedAt ? new Date(o.CreatedAt).toLocaleString() : ""}
+                    {o.createdAt
+                      ? new Date(o.createdAt).toLocaleString()
+                      : ""}
                   </p>
                   <p className="font-semibold">
-                    ₱{Number(o.TotalPrice || 0).toLocaleString()}
+                    ₱{Number(o.totalPrice || 0).toLocaleString()}
                   </p>
                   <button
-                    className="rounded-xl border border-red-300 px-3 py-2 text-red-600"
+                    className="rounded-xl border border-red-300 px-3 py-2 text-red-600 hover:bg-red-50"
                     onClick={() => setDeleting(o)}
                   >
                     Delete
                   </button>
                 </div>
               </div>
-              <ul className="mt-3 list-disc pl-5 text-sm text-gray-700">
-                {(o.Items || []).map((it, idx) => (
-                  <li key={idx}>
-                    Shoe #{it.ShoeId} × {it.Quantity} — ₱
-                    {Number(it.Price || 0).toLocaleString()}
+
+              {/* ✅ Show order items with full details */}
+              <ul className="mt-3 space-y-2 text-sm text-gray-700">
+                {(o.items || []).map((it, idx) => (
+                  <li
+                    key={idx}
+                    className="flex items-center gap-3 border-b pb-2 last:border-none"
+                  >
+                    {/* Shoe image */}
+                    <img
+                      src={it.imageUrl || "/images/placeholder.jpg"}
+                      alt={it.name || "Shoe"}
+                      className="h-12 w-12 rounded object-cover border"
+                    />
+                    <div className="flex-1">
+                      <p className="font-semibold">{it.name}</p>
+                      <p className="text-xs text-gray-500">{it.brand}</p>
+                      <p className="text-xs">
+                        Qty: {it.quantity} × ₱
+                        {Number(it.price || 0).toLocaleString()}
+                      </p>
+                    </div>
+                    <p className="font-medium">
+                      ₱{Number(it.quantity * it.price).toLocaleString()}
+                    </p>
                   </li>
                 ))}
               </ul>
@@ -76,8 +98,8 @@ export default function OrdersPage() {
         isOpen={!!deleting}
         onClose={() => setDeleting(null)}
         onConfirm={remove}
-        title="Delete this order?"
-        confirmText="Delete"
+        title="Are you sure you want to Delete or Cancel this order?"
+        confirmText="Yes"
       />
     </section>
   );

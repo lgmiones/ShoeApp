@@ -17,7 +17,8 @@ namespace ShoeShopAPI.Services
         Name = s.Name,
         Brand = s.Brand,
         Price = s.Price,
-        ImageUrl = s.ImageUrl  // ✅
+        ImageUrl = s.ImageUrl,  // ✅
+        Stock = s.Stock
     });
 
         public async Task<ShoeDto?> GetShoeAsync(int id)

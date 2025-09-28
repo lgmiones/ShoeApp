@@ -4,6 +4,8 @@ using ShoeShopAPI.Repositories;
 using ShoeShopAPI.Repositories.Interfaces;
 using ShoeShopAPI.Services;
 using ShoeShopAPI.Services.Interfaces;
+using ShoeShopAPI.Middlewares;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,6 +51,7 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowFrontend");
 
 app.UseHttpsRedirection();
+app.UseGlobalException();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
