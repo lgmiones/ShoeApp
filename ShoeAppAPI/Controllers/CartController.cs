@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using ShoeShopAPI.DTOs;
 using ShoeShopAPI.Services.Interfaces;
 
 namespace ShoeShopAPI.Controllers

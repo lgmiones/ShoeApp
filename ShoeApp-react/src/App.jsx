@@ -9,7 +9,7 @@ export default function App() {
         <Outlet />
       </main>
       <footer className="border-t py-6 text-center text-sm text-gray-500">
-        Happy feet, happy code.
+        Happy shopping, Enjoy every shoes.
       </footer>
     </div>
   );

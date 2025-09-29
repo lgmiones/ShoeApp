@@ -81,7 +81,7 @@ export default function ShoesPage() {
           onChange={(e) => setQuery(e.target.value)}
         />
         <button
-          className="rounded-xl bg-blue-600 px-4 py-2 text-white"
+          className="rounded-xl bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors"
           onClick={() => setOpenForm(true)}
         >
           + Add Shoe
@@ -127,7 +127,7 @@ export default function ShoesPage() {
                   className={`flex-1 rounded-xl border px-3 py-2 ${
                     s.stock <= 0
                       ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                      : ""
+                      : "hover:bg-gray-100 transition-colors"
                   }`}
                   onClick={() => {
                     setSelectedShoe(s);
@@ -139,7 +139,7 @@ export default function ShoesPage() {
                   {s.stock > 0 ? "Add to Cart" : "Out of Stock"}
                 </button>
                 <button
-                  className="rounded-xl border px-3 py-2"
+                  className="rounded-xl border px-3 py-2 hover:bg-gray-100 transition-colors"
                   onClick={() => {
                     setEditing(s);
                     setOpenForm(true);
@@ -148,7 +148,7 @@ export default function ShoesPage() {
                   Edit
                 </button>
                 <button
-                  className="rounded-xl border border-red-300 px-3 py-2 text-red-600"
+                  className="rounded-xl border border-red-300 px-3 py-2 text-red-600 hover:bg-red-50 transition-colors"
                   onClick={() => setDeleting(s)}
                 >
                   Delete

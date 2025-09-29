@@ -276,13 +276,13 @@ export default function ShoeFormModal({ isOpen, onClose, onSubmit, initial }) {
 
               <div className="mt-6 flex justify-end gap-2">
                 <button
-                  className="rounded-xl border px-3 py-2"
+                  className="rounded-xl border px-3 py-2 hover:bg-gray-100 transition"
                   onClick={onClose}
                 >
                   Cancel
                 </button>
                 <button
-                  className="rounded-xl bg-blue-600 px-3 py-2 text-white disabled:opacity-60"
+                  className="rounded-xl bg-blue-600 px-3 py-2 text-white disabled:opacity-60 hover:bg-blue-500 transition"
                   onClick={handleSubmit}
                   disabled={loading || hasErrors}
                   aria-disabled={loading || hasErrors}

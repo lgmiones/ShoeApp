@@ -11,15 +11,15 @@ namespace ShoeShopAPI.Services
         public ShoeService(IShoeRepository repo) => _repo = repo;
 
         public async Task<IEnumerable<ShoeDto>> GetAllShoesAsync() =>
-    (await _repo.GetAllAsync()).Select(s => new ShoeDto
-    {
-        Id = s.Id,
-        Name = s.Name,
-        Brand = s.Brand,
-        Price = s.Price,
-        ImageUrl = s.ImageUrl,  // ✅
-        Stock = s.Stock
-    });
+        (await _repo.GetAllAsync()).Select(s => new ShoeDto
+        {
+            Id = s.Id,
+            Name = s.Name,
+            Brand = s.Brand,
+            Price = s.Price,
+            ImageUrl = s.ImageUrl,  // ✅
+            Stock = s.Stock
+        });
 
         public async Task<ShoeDto?> GetShoeAsync(int id)
         {
