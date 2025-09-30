@@ -15,21 +15,20 @@ namespace ShoeShopAPI.Services
             _shoeRepo = shoeRepo;
         }
 
-        public async Task<IEnumerable<CartItemDto>> GetCartAsync() =>
-            (await _repo.GetCartAsync()).Select(c => new CartItemDto
+        public async Task<IEnumerable<CartItemDto>> GetCartAsync(int userId) =>
+            (await _repo.GetCartAsync(userId)).Select(c => new CartItemDto
             {
                 Id = c.Id,
                 ShoeId = c.ShoeId,
                 Quantity = c.Quantity,
-                Name = c.Shoe.Name,   // ✅ from navigation
-                Price = c.Shoe.Price,  // ✅ from navigation
+                Name = c.Shoe.Name,
+                Price = c.Shoe.Price,
                 ImageUrl = c.Shoe.ImageUrl
             });
 
-        public async Task<CartItemDto> AddToCartAsync(CartItemCreateDto dto)
+        public async Task<CartItemDto> AddToCartAsync(int userId, CartItemCreateDto dto)
         {
             var shoe = await _shoeRepo.GetByIdAsync(dto.ShoeId);
-
             if (shoe == null)
                 throw new Exception("Shoe not found.");
 
@@ -38,12 +37,13 @@ namespace ShoeShopAPI.Services
 
             if (dto.Quantity > shoe.Stock)
                 throw new Exception($"{shoe.Name} only has {shoe.Stock} left in stock.");
-            
-            var cartItem = new CartItem { ShoeId = dto.ShoeId, Quantity = dto.Quantity };
+
+            var cartItem = new CartItem { UserId = userId, ShoeId = dto.ShoeId, Quantity = dto.Quantity };
             var added = await _repo.AddToCartAsync(cartItem);
-            
+
             return new CartItemDto
             {
+                Id = added.Id,
                 ShoeId = added.ShoeId,
                 Quantity = added.Quantity,
                 Name = added.Shoe.Name,
@@ -51,7 +51,8 @@ namespace ShoeShopAPI.Services
                 ImageUrl = added.Shoe.ImageUrl
             };
         }
-        public async Task<bool> RemoveFromCartAsync(int id) => await _repo.RemoveFromCartAsync(id);
-        public async Task ClearCartAsync() => await _repo.ClearCartAsync();
+
+        public async Task<bool> RemoveFromCartAsync(int userId, int id) => await _repo.RemoveFromCartAsync(userId, id);
+        public async Task ClearCartAsync(int userId) => await _repo.ClearCartAsync(userId);
     }
 }

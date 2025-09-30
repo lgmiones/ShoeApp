@@ -94,7 +94,7 @@ export default function ShoeFormModal({ isOpen, onClose, onSubmit, initial }) {
 
   const previewSrc = form.imageUrl
     ? normalizeLocalImagePath(form.imageUrl)
-    : "/images/placeholder.png";
+    : "/images/placeholder.jpg";
 
   return (
     <Transition show={isOpen} as={Fragment}>

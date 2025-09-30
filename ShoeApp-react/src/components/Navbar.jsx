@@ -1,44 +1,121 @@
+// src/components/Navbar.jsx
 import { Link, NavLink } from "react-router-dom";
+import { useAuth } from "../state/AuthContext";
+import { useCart } from "../state/CartContext";
+import { ShoeIcon, CartIcon, OrderIcon } from "./art/Icons";
+
+function CartWithBadge({ children, count = 0 }) {
+  return (
+    <span className="relative inline-flex items-center">
+      {children}
+      {count > 0 && (
+        <span className="absolute -right-1 -top-1 min-w-[18px] h-[18px] rounded-full bg-blue-600 text-white text-[10px] leading-[18px] text-center px-[4px]">
+          {count > 99 ? "99+" : count}
+        </span>
+      )}
+    </span>
+  );
+}
 
 export default function Navbar() {
-  const linkBase =
-    "relative text-gray-700 transition-colors duration-200 ease-out " +
-    // underline rail
-    "after:absolute after:left-1/2 after:-translate-x-1/2 after:-bottom-1 " +
-    "after:h-[2px] after:w-0 after:bg-blue-600 after:rounded-full " +
-    "after:transition-all after:duration-300 after:ease-out " +
-    // motion-safe avoids animating for reduced-motion users
-    "motion-safe:transition motion-safe:will-change-transform";
+  const { isAuthed, email, logout } = useAuth();
+  const cartCtx = useCart();
+  const count = cartCtx?.count ?? 0; // ← use the cart context safely
 
-  const linkHover =
-    "hover:text-blue-600 hover:after:w-3/4 hover:-translate-y-[1px]";
+  const base =
+    "relative inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm transition-colors " +
+    "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60";
+  const idle = "text-gray-700 hover:text-blue-700";
+  const active =
+    "text-blue-700 bg-white shadow border border-white/60 " +
+    "after:absolute after:inset-x-3 after:-bottom-[6px] after:h-[3px] after:rounded-full after:bg-blue-500/70";
 
-  const linkActive = "text-blue-500 font-semibold after:w-3/4";
-
-  const active = ({ isActive }) =>
-    `${linkBase} ${linkHover} ${isActive ? linkActive : ""}`;
+  const linkClass = ({ isActive }) => `${base} ${isActive ? active : idle}`;
 
   return (
-    <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
-      <div className="mx-auto max-w-6xl flex items-center justify-between px-4 py-3">
-        <Link
-          to="/"
-          className="text-2xl font-bold tracking-tight transition-transform motion-safe:hover:scale-[1.01]"
-        >
-          zFlipsters
-        </Link>
+    <header className="sticky top-0 z-40">
+      <div className="h-[1px] w-full bg-gradient-to-r from-blue-200 via-indigo-200 to-blue-200/60" />
+      <div className="backdrop-blur-md bg-white/70 border-b border-white/40 shadow-sm">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="flex h-14 items-center justify-between gap-3">
+            {/* Brand */}
+            <Link
+              to="/"
+              className="group inline-flex items-center gap-2 rounded-2xl"
+              aria-label="zFlipsters home"
+            >
+              <div className="grid h-8 w-8 place-items-center rounded-xl bg-black text-white">
+                <span className="text-xs font-bold">zF</span>
+              </div>
+              <span className="text-lg font-semibold tracking-tight text-gray-900 group-hover:opacity-90">
+                zFlipsters
+              </span>
+            </Link>
 
-        <nav className="flex gap-6 text-sm">
-          <NavLink to="/" className={active}>
-            Shoes
-          </NavLink>
-          <NavLink to="/cart" className={active}>
-            Cart
-          </NavLink>
-          <NavLink to="/orders" className={active}>
-            Orders
-          </NavLink>
-        </nav>
+            {/* Desktop nav with icons */}
+            <nav className="hidden sm:flex items-center gap-1 rounded-2xl bg-gray-100 p-1">
+              <NavLink to="/" className={linkClass} end>
+                <ShoeIcon />
+                <span>Shoes</span>
+              </NavLink>
+              <NavLink to="/cart" className={linkClass}>
+                <CartWithBadge count={count}>
+                  <CartIcon />
+                </CartWithBadge>
+                <span>Cart</span>
+              </NavLink>
+              <NavLink to="/orders" className={linkClass}>
+                <OrderIcon />
+                <span>Orders</span>
+              </NavLink>
+            </nav>
+
+            {/* Auth */}
+            <div className="flex items-center gap-2">
+              {isAuthed ? (
+                <>
+                  <span className="hidden sm:inline-flex items-center rounded-xl border border-white/60 bg-white px-3 py-1 text-sm text-gray-700 shadow">
+                    {email}
+                  </span>
+                  <button
+                    onClick={logout}
+                    className="rounded-xl bg-blue-600 px-3 py-1.5 text-sm text-white transition hover:bg-blue-600/90"
+                    aria-label="Logout"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <NavLink
+                  to="/login"
+                  className="rounded-xl bg-blue-600 px-3 py-1.5 text-sm text-white transition hover:bg-blue-600/90"
+                >
+                  Login
+                </NavLink>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile nav with icons */}
+          <nav className="sm:hidden pb-3 pt-1">
+            <div className="flex gap-2 overflow-x-auto rounded-2xl bg-gray-100 p-1">
+              <NavLink to="/" className={linkClass} end>
+                <ShoeIcon />
+                <span>Shoes</span>
+              </NavLink>
+              <NavLink to="/cart" className={linkClass}>
+                <CartWithBadge count={count}>
+                  <CartIcon />
+                </CartWithBadge>
+                <span>Cart</span>
+              </NavLink>
+              <NavLink to="/orders" className={linkClass}>
+                <OrderIcon />
+                <span>Orders</span>
+              </NavLink>
+            </div>
+          </nav>
+        </div>
       </div>
     </header>
   );

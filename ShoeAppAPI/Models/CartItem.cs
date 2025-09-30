@@ -6,6 +6,9 @@ namespace ShoeShopAPI.Models
         public int ShoeId { get; set; }
         public int Quantity { get; set; }
 
+        public int UserId { get; set; }
+        public AppUser User { get; set; } = null!;
+
         public Shoe Shoe { get; set; } = null!;
     }
 }

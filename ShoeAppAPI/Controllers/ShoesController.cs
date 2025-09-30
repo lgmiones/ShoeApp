@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoeShopAPI.DTOs;
 using ShoeShopAPI.Services.Interfaces;
@@ -11,31 +12,42 @@ namespace ShoeShopAPI.Controllers
         private readonly IShoeService _service;
         public ShoesController(IShoeService service) => _service = service;
 
+        // Public: list shoes
         [HttpGet]
-        public async Task<IActionResult> GetShoes() => Ok(await _service.GetAllShoesAsync());
+        [AllowAnonymous]
+        public async Task<IActionResult> GetShoes() =>
+            Ok(await _service.GetAllShoesAsync());
 
-        [HttpGet("{id}")]
+        // Public: get one shoe
+        [HttpGet("{id:int}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetShoe(int id)
         {
             var shoe = await _service.GetShoeAsync(id);
             return shoe == null ? NotFound() : Ok(shoe);
         }
 
+        // Admin: create shoe
         [HttpPost]
-        public async Task<IActionResult> AddShoe(ShoeCreateDto dto)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> AddShoe([FromBody] ShoeCreateDto dto)
         {
             var newShoe = await _service.AddShoeAsync(dto);
             return CreatedAtAction(nameof(GetShoe), new { id = newShoe.Id }, newShoe);
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateShoe(int id, ShoeCreateDto dto)
+        // Admin: update shoe
+        [HttpPut("{id:int}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateShoe(int id, [FromBody] ShoeCreateDto dto)
         {
             var updated = await _service.UpdateShoeAsync(id, dto);
             return updated == null ? NotFound() : Ok(updated);
         }
 
-        [HttpDelete("{id}")]
+        // Admin: delete shoe
+        [HttpDelete("{id:int}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteShoe(int id)
         {
             var deleted = await _service.DeleteShoeAsync(id);

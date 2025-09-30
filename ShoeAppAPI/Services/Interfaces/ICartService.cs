@@ -4,9 +4,9 @@ namespace ShoeShopAPI.Services.Interfaces
 {
     public interface ICartService
     {
-        Task<IEnumerable<CartItemDto>> GetCartAsync();
-        Task<CartItemDto> AddToCartAsync(CartItemCreateDto dto);
-        Task<bool> RemoveFromCartAsync(int id);
-        Task ClearCartAsync();
+        Task<IEnumerable<CartItemDto>> GetCartAsync(int userId);
+        Task<CartItemDto> AddToCartAsync(int userId, CartItemCreateDto dto);
+        Task<bool> RemoveFromCartAsync(int userId, int id);
+        Task ClearCartAsync(int userId);
     }
 }

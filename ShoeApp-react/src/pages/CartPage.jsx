@@ -4,6 +4,7 @@ import EmptyState from "../components/EmptyState";
 import { success } from "../utils/toast";
 import { getCart, clearCart, deleteCartItem } from "../services/cart";
 import { placeOrder } from "../services/orders";
+import { useCart } from "../state/CartContext";
 
 const FALLBACK_SRC = "/images/placeholder.jpg";
 const currency = new Intl.NumberFormat("en-PH", {
@@ -16,10 +17,15 @@ export default function CartPage() {
   const [showOrderConfirm, setShowOrderConfirm] = useState(false);
   const [deleteItemId, setDeleteItemId] = useState(null);
 
+  // ✅ hooks belong inside the component
+  const { count, refreshCount, bump } = useCart();
+
   async function fetchCart() {
     try {
       const list = await getCart();
       setItems(Array.isArray(list) ? list : []);
+      // keep badge in sync whenever we fetch
+      await refreshCount();
     } catch (e) {
       console.error("Failed to load cart:", e);
       setItems([]);
@@ -28,6 +34,7 @@ export default function CartPage() {
 
   useEffect(() => {
     fetchCart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (items === null) return <Loading />;
@@ -39,21 +46,62 @@ export default function CartPage() {
   }, 0);
 
   async function onClear() {
-    await clearCart();
-    success("Cart cleared");
-    await fetchCart();
+    const snapshot = items;
+    const prevCount = count;
+
+    // Optimistic: zero UI & badge
+    setItems([]);
+    bump(-prevCount);
+
+    try {
+      await clearCart();
+      success("Cart cleared");
+      await refreshCount(); // hard-sync from server
+    } catch (e) {
+      // rollback UI & badge
+      setItems(snapshot);
+      bump(prevCount);
+      throw e;
+    }
   }
 
   async function onPlaceOrder() {
-    await placeOrder();
-    success("Order placed!");
-    await fetchCart();
+    const snapshot = items;
+    const prevCount = count;
+
+    // Optimistic
+    setItems([]);
+    bump(-prevCount);
+
+    try {
+      await placeOrder();
+      success("Order placed!");
+      await refreshCount();
+    } catch (e) {
+      setItems(snapshot);
+      bump(prevCount);
+      throw e;
+    }
   }
 
   async function onDeleteItem(id) {
-    await deleteCartItem(id);
-    success("Item removed from cart");
-    await fetchCart();
+    // If backend returns per-item IDs, we can optimistically adjust the badge
+    const victim = items.find((x) => x.id === id);
+    const qty = Number(victim?.quantity || 0);
+
+    const prev = items;
+    setItems(prev.filter((x) => x.id !== id));
+    if (qty) bump(-qty);
+
+    try {
+      await deleteCartItem(id);
+      success("Item removed from cart");
+      await refreshCount();
+    } catch (e) {
+      setItems(prev);
+      if (qty) bump(qty);
+      throw e;
+    }
   }
 
   return (
@@ -96,7 +144,9 @@ export default function CartPage() {
                     }}
                   />
                   <div>
-                    <p className="font-medium">{i?.name ?? `Shoe #${i?.shoeId}`}</p>
+                    <p className="font-medium">
+                      {i?.name ?? `Shoe #${i?.shoeId}`}
+                    </p>
                     <p className="text-sm text-gray-500">
                       Qty: {qty} × {currency.format(price)}
                     </p>
@@ -105,13 +155,17 @@ export default function CartPage() {
 
                 {/* Right: subtotal + delete */}
                 <div className="flex items-center gap-4">
-                  <div className="font-semibold">{currency.format(subtotal)}</div>
-                  <button
-                    className="px-2 py-1 rounded-xl bg-red-600 text-white text-sm"
-                    onClick={() => setDeleteItemId(i.id)} // open modal
-                  >
-                    Delete
-                  </button>
+                  <div className="font-semibold">
+                    {currency.format(subtotal)}
+                  </div>
+                  {Boolean(i?.id) && (
+                    <button
+                      className="px-2 py-1 rounded-xl bg-red-600 text-white text-sm"
+                      onClick={() => setDeleteItemId(i.id)}
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -139,19 +193,19 @@ export default function CartPage() {
 
       {/* Place Order Confirmation Modal */}
       {showOrderConfirm && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white rounded-xl p-6 w-80">
-            <h2 className="text-lg font-semibold mb-4">Confirm Order</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-80 rounded-xl bg-white p-6">
+            <h2 className="mb-4 text-lg font-semibold">Confirm Order</h2>
             <p className="mb-6">Are you sure you want to place this order?</p>
             <div className="flex justify-end gap-3">
               <button
-                className="px-4 py-2 rounded-xl border"
+                className="rounded-xl border px-4 py-2"
                 onClick={() => setShowOrderConfirm(false)}
               >
                 Cancel
               </button>
               <button
-                className="px-4 py-2 rounded-xl bg-blue-600 text-white"
+                className="rounded-xl bg-blue-600 px-4 py-2 text-white"
                 onClick={async () => {
                   setShowOrderConfirm(false);
                   await onPlaceOrder();
@@ -166,19 +220,21 @@ export default function CartPage() {
 
       {/* Delete Item Confirmation Modal */}
       {deleteItemId && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white rounded-xl p-6 w-80">
-            <h2 className="text-lg font-semibold mb-4">Delete Item</h2>
-            <p className="mb-6">Are you sure you want to remove this item from your cart?</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-80 rounded-xl bg-white p-6">
+            <h2 className="mb-4 text-lg font-semibold">Delete Item</h2>
+            <p className="mb-6">
+              Are you sure you want to remove this item from your cart?
+            </p>
             <div className="flex justify-end gap-3">
               <button
-                className="px-4 py-2 rounded-xl border"
+                className="rounded-xl border px-4 py-2"
                 onClick={() => setDeleteItemId(null)}
               >
                 Cancel
               </button>
               <button
-                className="px-4 py-2 rounded-xl bg-red-600 text-white"
+                className="rounded-xl bg-red-600 px-4 py-2 text-white"
                 onClick={async () => {
                   await onDeleteItem(deleteItemId);
                   setDeleteItemId(null);
