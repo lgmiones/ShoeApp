@@ -1,0 +1,39 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: shoeapp-db
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "Your_password123"
+    ports:
+      - "1433:1433"
+    networks: [shoeapp]
+
+  api:
+    build:
+      context: ./ShoeAppAPI
+      dockerfile: Dockerfile
+    container_name: shoeapp-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ShowSwagger: "true"
+      ConnectionStrings__DefaultConnection: "Server=db;Database=ShoeShopDB;User Id=sa;Password=Your_password123;TrustServerCertificate=true"
+    depends_on: [db]
+    ports:
+      - "5146:8080"
+    networks: [shoeapp]
+
+  web:
+    build:
+      context: ./ShoeApp-react
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: "http://localhost:5146"
+    container_name: shoeapp-web
+    depends_on: [api]
+    ports:
+      - "5173:80"
+    networks: [shoeapp]
+
+networks:
+  shoeapp: {}

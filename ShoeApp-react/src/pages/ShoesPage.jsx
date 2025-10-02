@@ -178,7 +178,7 @@ export default function ShoesPage() {
                     className={`flex-1 rounded-xl border px-3 py-2 ${
                       out
                         ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                        : "hover:bg-gray-100 transition-colors"
+                        : "hover:bg-green-300 transition-colors"
                     }`}
                     onClick={() => {
                       setSelectedShoe(s);
@@ -193,7 +193,7 @@ export default function ShoesPage() {
                   {isAdmin && (
                     <>
                       <button
-                        className="rounded-xl border px-3 py-2 hover:bg-gray-100 transition-colors"
+                        className="rounded-xl border px-3 py-2 hover:bg-yellow-300 transition-colors"
                         onClick={() => {
                           setEditing(s);
                           setOpenForm(true);

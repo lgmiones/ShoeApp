@@ -1,10 +1,17 @@
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity; // Identity base classes
 
 namespace ShoeShopAPI.Models
 {
-    // Using int keys keeps parity with your Order.UserId (int).
+    // Custom application user model
+    // Inherits from IdentityUser<int>, meaning the primary key (Id) is an int
+    // This matches other entities in your app (like Order.UserId which is int)
     public class AppUser : IdentityUser<int>
     {
-        // Add profile fields later if needed
+        // IdentityUser<int> already includes:
+        // Id, UserName, NormalizedUserName, Email, PasswordHash,
+        // PhoneNumber, Lockout info, SecurityStamp, etc.
+
+        // You can add extra profile fields here in the future,
+        // e.g., FirstName, LastName, Address, ProfilePicture, etc.
     }
 }

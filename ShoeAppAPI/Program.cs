@@ -14,23 +14,27 @@ using ShoeShopAPI.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// DbContext
+// -------------------- DATABASE SETUP --------------------
+// Register EF Core DbContext with SQL Server using connection string
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Identity (int keys)
+// -------------------- IDENTITY (USER + ROLES) --------------------
+// Configure Identity with int keys for users/roles
 builder.Services.AddIdentityCore<AppUser>(opt =>
 {
+    // Simplified password rules for demo (can be stricter in prod)
     opt.Password.RequiredLength = 6;
     opt.Password.RequireNonAlphanumeric = false;
     opt.Password.RequireUppercase = false;
 })
-    .AddRoles<IdentityRole<int>>()
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddSignInManager<SignInManager<AppUser>>()
-    .AddDefaultTokenProviders();
+    .AddRoles<IdentityRole<int>>()              // Add support for roles (Admin/Customer)
+    .AddEntityFrameworkStores<AppDbContext>()   // Store identity data in EF Core tables
+    .AddSignInManager<SignInManager<AppUser>>() // Provides login/sign-in APIs
+    .AddDefaultTokenProviders();                // Enables tokens (e.g., password reset)
 
-// Auth: JWT
+// -------------------- JWT AUTHENTICATION --------------------
+// Get JWT settings from appsettings.json
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSection["Key"]!));
 
@@ -38,6 +42,7 @@ builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Validation rules for incoming JWTs
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -47,32 +52,38 @@ builder.Services
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = key,
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
+            ClockSkew = TimeSpan.Zero // No extra leeway for expired tokens
         };
     });
 
+// -------------------- AUTHORIZATION POLICIES --------------------
+// Define policy for Admin-only endpoints
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
 });
 
-// Repositories
+// -------------------- DEPENDENCY INJECTION --------------------
+// Register repositories (data access layer)
 builder.Services.AddScoped<IShoeRepository, ShoeRepository>();
 builder.Services.AddScoped<ICartRepository, CartRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
-// Services
+// Register services (business logic layer)
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IShoeService, ShoeService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 
+// -------------------- CONTROLLERS + SWAGGER --------------------
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// Swagger + JWT auth button
+// Swagger documentation with JWT "Authorize" button
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "ShoeShopAPI", Version = "v1" });
+
     var jwtSecurityScheme = new OpenApiSecurityScheme
     {
         BearerFormat = "JWT",
@@ -87,6 +98,7 @@ builder.Services.AddSwaggerGen(c =>
             Type = ReferenceType.SecurityScheme
         }
     };
+
     c.AddSecurityDefinition(jwtSecurityScheme.Reference.Id, jwtSecurityScheme);
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
@@ -94,22 +106,29 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// CORS
+// -------------------- CORS --------------------
+// Allow frontend (React/Vue/etc.) to call API
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins("http://localhost:5173") // frontend URL
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
 });
 
 var app = builder.Build();
+var showSwagger = app.Environment.IsDevelopment() ||
+                  builder.Configuration.GetValue<bool>("ShowSwagger");
 
-// Seed roles + admin at startup
+// -------------------- SEED ROLES + ADMIN USER --------------------
+// Ensure Admin and Customer roles exist, and create default Admin if missing
 using (var scope = app.Services.CreateScope())
 {
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate(); // Apply pending migrations
+
     var roleMgr = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<int>>>();
     var userMgr = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
 
@@ -124,21 +143,24 @@ using (var scope = app.Services.CreateScope())
     if (admin == null)
     {
         admin = new AppUser { UserName = adminEmail, Email = adminEmail };
-        await userMgr.CreateAsync(admin, "Admin123!");
+        await userMgr.CreateAsync(admin, "Admin123!");    // default admin password
         await userMgr.AddToRoleAsync(admin, "Admin");
     }
 }
 
-if (app.Environment.IsDevelopment())
+// -------------------- MIDDLEWARE PIPELINE --------------------
+if (showSwagger)
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "ShoeShopAPI v1");
+    });
 }
 
-app.UseCors("AllowFrontend");
-app.UseHttpsRedirection();
-app.UseGlobalException();
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
-app.Run();
+app.UseCors("AllowFrontend");     // Enable CORS for frontend
+app.UseGlobalException();         // Custom global exception middleware
+app.UseAuthentication();          // Enable JWT auth
+app.UseAuthorization();           // Enable role-based access control
+app.MapControllers();             // Map controller routes
+app.Run();                        // Start the application
