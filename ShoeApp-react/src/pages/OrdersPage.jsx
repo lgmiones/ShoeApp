@@ -3,23 +3,22 @@ import Loading from "../components/Loading";
 import EmptyState from "../components/EmptyState";
 import ConfirmDialog from "../components/modals/ConfirmDialog";
 import { success } from "../utils/toast";
-import {
-  getOrders,
-  deleteOrder /*, adminDeleteOrder */,
-} from "../services/orders";
+import { getOrders, deleteOrder } from "../services/orders";
 import { useAuth } from "../state/AuthContext";
 
+// OrdersPage component — displays and manages customer/admin orders
 export default function OrdersPage() {
   const [orders, setOrders] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [emailFilter, setEmailFilter] = useState(""); // admin filter
+  const [emailFilter, setEmailFilter] = useState("");
   const { isAdmin } = useAuth();
 
+  // Function to fetch orders from the backend
   const fetchOrders = async () => {
     try {
       setBusy(true);
-      const list = await getOrders(isAdmin); // Admin -> /Orders/all
+      const list = await getOrders(isAdmin);
       setOrders(Array.isArray(list) ? list : []);
     } catch (e) {
       console.error("Failed to load orders:", e);
@@ -29,50 +28,57 @@ export default function OrdersPage() {
     }
   };
 
+  // Fetch orders on initial load or when admin status changes
   useEffect(() => {
     fetchOrders();
   }, [isAdmin]);
 
-  // Client-side filter for admins by userEmail (contains)
+  // Filter orders by email (for admin users)
   const filtered = useMemo(() => {
     if (!Array.isArray(orders)) return [];
     if (!isAdmin || !emailFilter.trim()) return orders;
     const q = emailFilter.toLowerCase();
+
     return orders.filter((o) => (o.userEmail || "").toLowerCase().includes(q));
   }, [orders, emailFilter, isAdmin]);
 
+  // Function to handle deleting an order
   const remove = async () => {
     if (!deleting) return;
-    // Optimistic remove
+
     const prev = orders;
     setOrders((list) => list.filter((o) => o.id !== deleting.id));
     setDeleting(null);
+
     try {
-      // if (isAdmin) await adminDeleteOrder(deleting.id); else
       await deleteOrder(deleting.id);
       success("Order deleted");
     } catch (e) {
-      // rollback
       setOrders(prev);
       throw e;
     }
   };
 
+  // Show loading indicator while fetching
   if (orders === null) return <Loading />;
 
   return (
     <section className="space-y-6">
-      {/* Header */}
+      {/* Header section */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-semibold">Orders</h1>
+          {/* Show admin label if viewing all users’ orders */}
           {isAdmin && filtered.length > 0 && (
             <span className="text-xs text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md">
               Admin: showing all customers’ orders
             </span>
           )}
         </div>
+
+        {/* Filter and refresh controls */}
         <div className="flex items-center gap-2">
+          {/* Email filter visible only for admin */}
           {isAdmin && (
             <input
               className="rounded-lg border px-3 py-2 text-sm"
@@ -81,8 +87,9 @@ export default function OrdersPage() {
               onChange={(e) => setEmailFilter(e.target.value)}
             />
           )}
+          {/* Refresh button */}
           <button
-            className="rounded-xl border px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-60"
+            className="rounded-xl border px-3 py-2 text-sm hover:bg-gray-200 disabled:opacity-60"
             onClick={fetchOrders}
             disabled={busy}
           >
@@ -91,7 +98,7 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* List */}
+      {/* Display orders or empty state */}
       {filtered.length === 0 ? (
         <EmptyState
           title="No orders found"
@@ -101,6 +108,7 @@ export default function OrdersPage() {
         />
       ) : (
         <div className="space-y-3">
+          {/* Loop through each order */}
           {filtered.map((o) => (
             <div
               key={o.id}
@@ -109,6 +117,7 @@ export default function OrdersPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <p className="font-semibold">Order #{o.id}</p>
+                  {/* Show email if available (admin view) */}
                   {o.userEmail && (
                     <span className="rounded-lg bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
                       {o.userEmail}
@@ -116,6 +125,7 @@ export default function OrdersPage() {
                   )}
                 </div>
 
+                {/* Order details and delete button */}
                 <div className="flex items-center gap-3">
                   <p className="text-sm text-gray-500">
                     {o.createdAt ? new Date(o.createdAt).toLocaleString() : ""}
@@ -132,12 +142,14 @@ export default function OrdersPage() {
                 </div>
               </div>
 
+              {/* List of items inside each order */}
               <ul className="mt-3 space-y-2 text-sm text-gray-700">
                 {(o.items || []).map((it, idx) => (
                   <li
                     key={idx}
                     className="flex items-center gap-3 border-b pb-2 last:border-none"
                   >
+                    {/* Product image with fallback */}
                     <img
                       src={it.imageUrl || "/images/placeholder.jpg"}
                       alt={it.name || "Shoe"}
@@ -160,6 +172,7 @@ export default function OrdersPage() {
                         {Number(it.price || 0).toLocaleString()}
                       </p>
                     </div>
+                    {/* Subtotal for this item */}
                     <p className="font-medium">
                       ₱
                       {Number(
@@ -174,6 +187,7 @@ export default function OrdersPage() {
         </div>
       )}
 
+      {/* Delete confirmation modal */}
       <ConfirmDialog
         isOpen={!!deleting}
         onClose={() => setDeleting(null)}

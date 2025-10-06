@@ -1,8 +1,9 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 
-// "nike.jpg" -> "/images/nike.jpg"
-// keep as-is if already "/images/..." or full http(s) URL
+// --- Helper: normalize local image paths ---
+// Converts "nike.jpg" → "/images/nike.jpg"
+// Keeps URLs starting with "http(s)" or "/images/" unchanged
 const normalizeLocalImagePath = (value) => {
   if (!value) return "";
   const v = value.trim();
@@ -16,7 +17,7 @@ const normalizeLocalImagePath = (value) => {
 };
 
 export default function ShoeFormModal({ isOpen, onClose, onSubmit, initial }) {
-  // local form state (camelCase); mapped to PascalCase DTO on submit
+  // Local form state (camelCase) — React controlled inputs
   const [form, setForm] = useState({
     name: "",
     brand: "",
@@ -24,11 +25,12 @@ export default function ShoeFormModal({ isOpen, onClose, onSubmit, initial }) {
     stock: 0,
     imageUrl: "",
   });
-  const [loading, setLoading] = useState(false);
-  const [touched, setTouched] = useState({});
-  const [errors, setErrors] = useState({});
 
-  // normalize initial values from API (GET returns lowercase keys)
+  const [loading, setLoading] = useState(false); // handles async submit state
+  const [touched, setTouched] = useState({}); // tracks which fields user interacted with
+  const [errors, setErrors] = useState({}); // validation errors
+
+  // --- Initialize form when editing ---
   useEffect(() => {
     const norm = {
       name: initial?.name ?? initial?.Name ?? "",
@@ -38,23 +40,25 @@ export default function ShoeFormModal({ isOpen, onClose, onSubmit, initial }) {
       imageUrl: initial?.imageUrl ?? initial?.ImageUrl ?? "",
     };
     if (isOpen) {
-      setForm(norm);
-      setTouched({});
-      setErrors({});
+      setForm(norm); // populate form fields
+      setTouched({}); // reset touched state
+      setErrors({}); // reset validation
       setLoading(false);
     }
   }, [initial, isOpen]);
 
-  // simple validation (Swagger-ish)
+  // --- Validation logic ---
   const validate = useMemo(() => {
     const e = {};
     if (!form.name?.trim()) e.name = "Name is required.";
     if (!form.brand?.trim()) e.brand = "Brand is required.";
 
+    // price must be number ≥ 0
     if (form.price === "" || isNaN(form.price))
       e.price = "Price must be a number.";
     else if (Number(form.price) < 0) e.price = "Price cannot be negative.";
 
+    // stock must be integer ≥ 0
     if (form.stock === "" || isNaN(form.stock))
       e.stock = "Stock must be a number.";
     else if (!Number.isInteger(Number(form.stock)) || Number(form.stock) < 0) {
@@ -67,7 +71,9 @@ export default function ShoeFormModal({ isOpen, onClose, onSubmit, initial }) {
   const markTouched = (k) => setTouched((t) => ({ ...t, [k]: true }));
   const setField = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  // --- Submit handler ---
   const handleSubmit = async () => {
+    // mark all fields as touched (to show validation)
     setTouched({
       name: true,
       brand: true,
@@ -76,9 +82,12 @@ export default function ShoeFormModal({ isOpen, onClose, onSubmit, initial }) {
       imageUrl: true,
     });
     setErrors(validate);
-    if (Object.keys(validate).length > 0) return;
+
+    if (Object.keys(validate).length > 0) return; // block submit if errors
 
     setLoading(true);
+
+    // Map camelCase form → PascalCase DTO (matches backend API)
     const dto = {
       Name: form.name.trim(),
       Brand: form.brand.trim(),
@@ -88,10 +97,12 @@ export default function ShoeFormModal({ isOpen, onClose, onSubmit, initial }) {
         ? normalizeLocalImagePath(form.imageUrl)
         : undefined, // optional
     };
-    await onSubmit(dto);
+
+    await onSubmit(dto); // call parent-provided handler
     setLoading(false);
   };
 
+  // --- Image preview ---
   const previewSrc = form.imageUrl
     ? normalizeLocalImagePath(form.imageUrl)
     : "/images/placeholder.jpg";
@@ -99,7 +110,7 @@ export default function ShoeFormModal({ isOpen, onClose, onSubmit, initial }) {
   return (
     <Transition show={isOpen} as={Fragment}>
       <Dialog onClose={onClose} className="relative z-50">
-        {/* Backdrop */}
+        {/* --- Backdrop (dim background) --- */}
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-200"
@@ -112,7 +123,7 @@ export default function ShoeFormModal({ isOpen, onClose, onSubmit, initial }) {
           <div className="fixed inset-0 bg-black/40" />
         </Transition.Child>
 
-        {/* Panel */}
+        {/* --- Centered modal panel --- */}
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <Transition.Child
             as={Fragment}
@@ -124,12 +135,14 @@ export default function ShoeFormModal({ isOpen, onClose, onSubmit, initial }) {
             leaveTo="opacity-0 scale-95"
           >
             <Dialog.Panel className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+              {/* Title depends on context (Add or Edit) */}
               <Dialog.Title className="text-lg font-semibold">
                 {initial ? "Edit Shoe" : "Add Shoe"}
               </Dialog.Title>
 
+              {/* --- Form fields --- */}
               <div className="mt-4 space-y-4">
-                {/* Name */}
+                {/* Name field */}
                 <div>
                   <label
                     htmlFor="shoe-name"
@@ -154,7 +167,7 @@ export default function ShoeFormModal({ isOpen, onClose, onSubmit, initial }) {
                   )}
                 </div>
 
-                {/* Brand */}
+                {/* Brand field */}
                 <div>
                   <label
                     htmlFor="shoe-brand"
@@ -181,7 +194,7 @@ export default function ShoeFormModal({ isOpen, onClose, onSubmit, initial }) {
                   )}
                 </div>
 
-                {/* Price */}
+                {/* Price field */}
                 <div>
                   <label
                     htmlFor="shoe-price"
@@ -211,7 +224,7 @@ export default function ShoeFormModal({ isOpen, onClose, onSubmit, initial }) {
                   )}
                 </div>
 
-                {/* Stock */}
+                {/* Stock field */}
                 <div>
                   <label
                     htmlFor="shoe-stock"
@@ -241,7 +254,7 @@ export default function ShoeFormModal({ isOpen, onClose, onSubmit, initial }) {
                   )}
                 </div>
 
-                {/* Image URL + preview */}
+                {/* Image field with preview */}
                 <div>
                   <label
                     htmlFor="shoe-image"
@@ -261,6 +274,7 @@ export default function ShoeFormModal({ isOpen, onClose, onSubmit, initial }) {
                     filename.
                   </p>
 
+                  {/* Live preview */}
                   <div className="mt-3">
                     <img
                       src={previewSrc}
@@ -274,6 +288,7 @@ export default function ShoeFormModal({ isOpen, onClose, onSubmit, initial }) {
                 </div>
               </div>
 
+              {/* --- Buttons --- */}
               <div className="mt-6 flex justify-end gap-2">
                 <button
                   className="rounded-xl border px-3 py-2 hover:bg-gray-100 transition"

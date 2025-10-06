@@ -1,7 +1,6 @@
 import api from "../lib/axios";
 
 export async function register({ email, password }) {
-  // Do NOT send a role; backend will assign "Customer" when Role is null/empty.
   const { data } = await api.post("/Auth/register", { email, password });
   persistAuth(data);
   return data;
@@ -12,11 +11,13 @@ export async function login({ email, password }) {
   persistAuth(data);
   return data;
 }
+
 export async function me() {
   const { data } = await api.get("/Auth/me");
   persistAuth(data);
   return data;
 }
+
 export function logout() {
   localStorage.removeItem("token");
   localStorage.removeItem("roles");
@@ -24,11 +25,12 @@ export function logout() {
 }
 
 function persistAuth(dto) {
-  if (!dto?.token) return;
+  if (!dto?.token) return; // If no token is returned, skip saving.
   localStorage.setItem("token", dto.token);
   localStorage.setItem("email", dto.email ?? "");
   localStorage.setItem("roles", JSON.stringify(dto.roles ?? []));
 }
+
 export function getRoles() {
   try {
     return JSON.parse(localStorage.getItem("roles") || "[]");
@@ -36,9 +38,13 @@ export function getRoles() {
     return [];
   }
 }
+
 export function isAdmin() {
   return getRoles().includes("Admin");
 }
+
 export function isAuthed() {
   return !!localStorage.getItem("token");
 }
+
+//Handles login, logout, and token management

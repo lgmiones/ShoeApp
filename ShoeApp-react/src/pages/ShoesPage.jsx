@@ -1,9 +1,16 @@
+// Import React hooks for state and lifecycle management
 import { useEffect, useMemo, useState } from "react";
+
+// Import custom components for UI and modals
 import Loading from "../components/Loading";
 import EmptyState from "../components/EmptyState";
 import ShoeFormModal from "../components/modals/ShoeFormModal";
 import ConfirmDialog from "../components/modals/ConfirmDialog";
+
+// Import a success toast message function
 import { success } from "../utils/toast";
+
+// Import API service functions for managing shoes and cart
 import {
   getShoes,
   createShoe,
@@ -11,78 +18,95 @@ import {
   deleteShoe,
 } from "../services/shoes";
 import { addToCart } from "../services/cart";
+
+// Import authentication and cart context hooks
 import { useAuth } from "../state/AuthContext";
 import { useCart } from "../state/CartContext";
 
 export default function ShoesPage() {
-  const [shoes, setShoes] = useState(null);
-  const [query, setQuery] = useState("");
-  const [openForm, setOpenForm] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [deleting, setDeleting] = useState(null);
-  const [openQuantity, setOpenQuantity] = useState(false);
-  const [selectedShoe, setSelectedShoe] = useState(null);
-  const [quantity, setQuantity] = useState(1);
+  // ---------------- State variables ----------------
+  const [shoes, setShoes] = useState(null); // List of shoes
+  const [query, setQuery] = useState(""); // Search input
+  const [openForm, setOpenForm] = useState(false); // Shoe form modal visibility
+  const [editing, setEditing] = useState(null); // Shoe being edited
+  const [deleting, setDeleting] = useState(null); // Shoe being deleted
+  const [openQuantity, setOpenQuantity] = useState(false); // Quantity modal visibility
+  const [selectedShoe, setSelectedShoe] = useState(null); // Shoe selected for adding to cart
+  const [quantity, setQuantity] = useState(1); // Quantity to add to cart
+
+  // Hooks for authentication (check if admin) and cart (update cart count)
   const { isAdmin } = useAuth();
   const { bump: bumpCart } = useCart();
 
-  const FALLBACK_SRC = "/images/placeholder.jpg";
+  const FALLBACK_SRC = "/images/placeholder.jpg"; // Default shoe image
 
+  // ---------------- Fetch all shoes ----------------
   const fetchShoes = async () => {
     try {
-      const list = await getShoes();
-      setShoes(Array.isArray(list) ? list : []);
+      const list = await getShoes(); // Fetch shoes from API
+      setShoes(Array.isArray(list) ? list : []); // Store result in state
     } catch (e) {
       console.error("Failed to load shoes:", e);
-      setShoes([]);
+      setShoes([]); // Show empty list if error occurs
     }
   };
 
+  // Fetch shoes once when component loads
   useEffect(() => {
     fetchShoes();
   }, []);
 
+  // ---------------- Filter shoes based on search ----------------
   const filtered = useMemo(() => {
     const list = Array.isArray(shoes) ? shoes : [];
     const q = query.toLowerCase();
+    // Search by name or brand (case-insensitive)
     return list.filter((s) =>
       [s.name, s.brand].filter(Boolean).join(" ").toLowerCase().includes(q)
     );
   }, [shoes, query]);
 
+  // ---------------- Create or update shoe ----------------
   const createOrUpdate = async (dtoPascal) => {
     if (editing) {
+      // Update existing shoe
       await updateShoe(editing.id, dtoPascal);
       success("Shoe updated");
     } else {
+      // Create new shoe
       await createShoe(dtoPascal);
       success("Shoe created");
     }
     setOpenForm(false);
     setEditing(null);
-    await fetchShoes();
+    await fetchShoes(); // Refresh list after update
   };
 
+  // ---------------- Delete a shoe ----------------
   const remove = async () => {
     if (!deleting) return;
-    // Optimistic delete
+
+    // Optimistic delete (remove from UI before confirming)
     const prev = shoes;
     setShoes((list) => list.filter((x) => x.id !== deleting.id));
     setDeleting(null);
+
     try {
       await deleteShoe(deleting.id);
       success("Shoe deleted");
     } catch (e) {
-      setShoes(prev); // rollback
+      // Rollback if API fails
+      setShoes(prev);
       throw e;
     }
   };
 
+  // Show loading indicator while data is being fetched
   if (shoes === null) return <Loading />;
 
   return (
     <section className="space-y-6">
-      {/* Fancy header */}
+      {/* ---------------- Header with search and add button ---------------- */}
       <div className="rounded-3xl border bg-gradient-to-r from-blue-50 via-indigo-50 to-white p-4 sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
@@ -97,12 +121,14 @@ export default function ShoesPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Search input for name or brand */}
             <input
               className="w-[260px] rounded-xl border px-3 py-2 text-sm"
               placeholder="Search by name or brand…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
+            {/* Add button for admin users only */}
             {isAdmin && (
               <button
                 className="rounded-xl bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors"
@@ -115,6 +141,7 @@ export default function ShoesPage() {
         </div>
       </div>
 
+      {/* ---------------- Show list or empty state ---------------- */}
       {filtered.length === 0 ? (
         <EmptyState
           title="No shoes found"
@@ -126,8 +153,8 @@ export default function ShoesPage() {
         <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((s) => {
             const stock = Number(s.stock || 0);
-            const low = stock > 0 && stock < 2;
-            const out = stock <= 0;
+            const low = stock > 0 && stock < 2; // Low stock warning
+            const out = stock <= 0; // Out of stock
             const price = Number(s.price || 0);
 
             return (
@@ -135,6 +162,7 @@ export default function ShoesPage() {
                 key={s.id}
                 className="group rounded-2xl border bg-white p-4 shadow-sm transition hover:shadow-lg"
               >
+                {/* ---------------- Shoe image with stock ribbon ---------------- */}
                 <div className="relative mb-3 flex justify-center">
                   <img
                     src={s.imageUrl || FALLBACK_SRC}
@@ -145,7 +173,7 @@ export default function ShoesPage() {
                         e.currentTarget.src = FALLBACK_SRC;
                     }}
                   />
-                  {/* Stock ribbons */}
+                  {/* Show low stock or out of stock label */}
                   {low && !out && (
                     <span className="absolute left-2 top-2 rounded-md bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white shadow">
                       <span className="mr-1">⚠</span> {stock} left
@@ -158,6 +186,7 @@ export default function ShoesPage() {
                   )}
                 </div>
 
+                {/* ---------------- Shoe info ---------------- */}
                 <div className="mt-1 flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate font-semibold">{s.name}</p>
@@ -173,7 +202,9 @@ export default function ShoesPage() {
                   </p>
                 </div>
 
+                {/* ---------------- Buttons for Add/Edit/Delete ---------------- */}
                 <div className="mt-4 flex gap-2">
+                  {/* Add to Cart button */}
                   <button
                     className={`flex-1 rounded-xl border px-3 py-2 ${
                       out
@@ -190,6 +221,7 @@ export default function ShoesPage() {
                     {out ? "Out of Stock" : "Add to Cart"}
                   </button>
 
+                  {/* Admin buttons: Edit and Delete */}
                   {isAdmin && (
                     <>
                       <button
@@ -216,7 +248,7 @@ export default function ShoesPage() {
         </ul>
       )}
 
-      {/* Add/Edit modal */}
+      {/* ---------------- Shoe form modal for adding/editing ---------------- */}
       <ShoeFormModal
         isOpen={openForm}
         onClose={() => {
@@ -227,7 +259,7 @@ export default function ShoesPage() {
         initial={editing}
       />
 
-      {/* Confirm delete modal */}
+      {/* ---------------- Delete confirmation modal ---------------- */}
       <ConfirmDialog
         isOpen={!!deleting}
         onClose={() => setDeleting(null)}
@@ -237,13 +269,15 @@ export default function ShoesPage() {
         confirmText="Delete"
       />
 
-      {/* Quantity selection modal */}
+      {/* ---------------- Quantity selection modal ---------------- */}
       {openQuantity && selectedShoe && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-full max-w-sm rounded-xl bg-white p-6">
             <h2 className="mb-4 text-lg font-semibold">
               How many "{selectedShoe.name}"?
             </h2>
+
+            {/* Quantity input field */}
             <input
               type="number"
               min={1}
@@ -252,6 +286,8 @@ export default function ShoesPage() {
               onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
               className="mb-4 w-full rounded-lg border px-3 py-2"
             />
+
+            {/* Buttons for adding to cart or canceling */}
             <div className="flex justify-end gap-2">
               <button
                 className="rounded-lg border px-4 py-2"
@@ -262,13 +298,13 @@ export default function ShoesPage() {
               <button
                 className="rounded-lg bg-blue-600 px-4 py-2 text-white"
                 onClick={async () => {
-                  // Optimistic: bump cart count immediately
+                  // Optimistic UI update — instantly increase cart count
                   bumpCart(quantity);
                   try {
                     await addToCart(selectedShoe.id, quantity);
                     success(`Added ${quantity} to cart`);
                   } catch (e) {
-                    // rollback if you want: bumpCart(-quantity);
+                    // Could rollback cart here if needed
                     throw e;
                   } finally {
                     setOpenQuantity(false);

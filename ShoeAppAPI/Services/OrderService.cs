@@ -1,7 +1,3 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Collections.Generic;
 using ShoeShopAPI.DTOs;
 using ShoeShopAPI.Models;
 using ShoeShopAPI.Repositories.Interfaces;
@@ -9,12 +5,14 @@ using ShoeShopAPI.Services.Interfaces;
 
 namespace ShoeShopAPI.Services
 {
+    // Service layer responsible for handling all order-related business logic
     public class OrderService : IOrderService
     {
-        private readonly ICartRepository _cartRepo;
-        private readonly IOrderRepository _orderRepo;
-        private readonly IShoeRepository _shoeRepo;
+        private readonly ICartRepository _cartRepo;     // to access cart data (user’s current cart items)
+        private readonly IOrderRepository _orderRepo;   // to access orders in the database
+        private readonly IShoeRepository _shoeRepo;     // to check/update stock of shoes
 
+        // Constructor: repositories are injected using Dependency Injection
         public OrderService(
             ICartRepository cartRepo,
             IOrderRepository orderRepo,
@@ -26,8 +24,9 @@ namespace ShoeShopAPI.Services
         }
 
         // ---------------------------
-        // Helpers
+        // Helper method
         // ---------------------------
+        // Converts an Order entity from DB into an OrderDto for API responses
         private static OrderDto MapOrder(Order o)
         {
             return new OrderDto
@@ -35,8 +34,7 @@ namespace ShoeShopAPI.Services
                 Id = o.Id,
                 CreatedAt = o.CreatedAt,
                 TotalPrice = o.TotalPrice,
-                // You said you added this to OrderDto
-                UserEmail = o.User?.Email,
+                UserEmail = o.User?.Email, // only populated when admin fetches all orders
                 Items = (o.Items ?? new List<OrderItem>()).Select(i => new OrderItemDto
                 {
                     ShoeId = i.ShoeId,
@@ -50,21 +48,24 @@ namespace ShoeShopAPI.Services
         }
 
         // ---------------------------
-        // Customer / current user
+        // Customer / current user methods
         // ---------------------------
+
+        // 📌 Place an order for the current user
         public async Task<OrderDto> PlaceOrderAsync(int userId)
         {
+            // 1. Get all items from the user’s cart
             var cartItems = await _cartRepo.GetCartAsync(userId);
             if (cartItems == null || !cartItems.Any())
                 throw new Exception("Cart is empty.");
 
-            // Group quantities per shoe to check stock
+            // 2. Group items by ShoeId to sum quantities
             var grouped = cartItems
                 .GroupBy(c => c.ShoeId)
                 .Select(g => new { ShoeId = g.Key, Quantity = g.Sum(x => x.Quantity) })
                 .ToList();
 
-            // Stock checks
+            // 3. Check stock availability for each shoe
             foreach (var item in grouped)
             {
                 var shoe = await _shoeRepo.GetByIdAsync(item.ShoeId)
@@ -73,16 +74,16 @@ namespace ShoeShopAPI.Services
                     throw new Exception($"{shoe.Name} does not have enough stock.");
             }
 
-            // Deduct stock
+            // 4. Deduct stock from each shoe
             foreach (var item in grouped)
             {
                 var shoe = await _shoeRepo.GetByIdAsync(item.ShoeId)
-                           ?? throw new Exception($"Shoe {item.ShoeId} not found."); // safety
+                           ?? throw new Exception($"Shoe {item.ShoeId} not found."); // safety check
                 shoe.Stock -= item.Quantity;
-                await _shoeRepo.UpdateAsync(shoe);
+                await _shoeRepo.UpdateAsync(shoe); // update stock in DB
             }
 
-            // Build order from cart snapshot
+            // 5. Build an Order entity from the cart snapshot
             var totalPrice = cartItems.Sum(c => c.Shoe.Price * c.Quantity);
             var order = new Order
             {
@@ -97,18 +98,19 @@ namespace ShoeShopAPI.Services
                 CreatedAt = DateTime.UtcNow
             };
 
+            // 6. Save the new order in the database
             var placed = await _orderRepo.PlaceOrderAsync(order);
 
-            // Clear cart after successful placement
+            // 7. Clear the user’s cart after successful order
             await _cartRepo.ClearCartAsync(userId);
 
-            // We can safely map from the known cart snapshot (has Shoe info) even if repo didn't load navigations on 'placed'
+            // 8. Build an OrderDto from the cart snapshot (ensures Shoe info is available)
             var dto = new OrderDto
             {
                 Id = placed.Id,
                 CreatedAt = placed.CreatedAt,
                 TotalPrice = placed.TotalPrice,
-                UserEmail = null, // current user’s email isn’t critical here; controller's /me can provide it if ever needed
+                UserEmail = null, // current user’s email not critical here
                 Items = cartItems.Select(i => new OrderItemDto
                 {
                     ShoeId = i.ShoeId,
@@ -123,30 +125,32 @@ namespace ShoeShopAPI.Services
             return dto;
         }
 
+        // 📌 Get all orders for the current user
         public async Task<IEnumerable<OrderDto>> GetOrdersAsync(int userId)
         {
-            // Repository should Include(o => o.Items).ThenInclude(i => i.Shoe)
-            // so MapOrder can access Shoe data. UserEmail will be null here (not needed for self-view).
+            // Repository should eager load Items and Shoes
             var orders = await _orderRepo.GetOrdersAsync(userId);
-            return orders.Select(MapOrder);
+            return orders.Select(MapOrder); // map to DTOs
         }
 
+        // 📌 Delete an order (only the current user’s own order)
         public async Task DeleteOrderAsync(int userId, int id)
         {
             await _orderRepo.DeleteOrderAsync(userId, id);
         }
 
         // ---------------------------
-        // Admin
+        // Admin-only methods
         // ---------------------------
+
+        // 📌 Get all orders (for admin management)
         public async Task<IEnumerable<OrderDto>> GetAllOrdersAsync()
         {
-            // Repository must Include(o => o.Items).ThenInclude(i => i.Shoe)
-            // and Include(o => o.User) so UserEmail maps correctly.
             var orders = await _orderRepo.GetAllOrdersAsync();
-            return orders.Select(MapOrder);
+            return orders.Select(MapOrder); // includes UserEmail for admin view
         }
 
+        // 📌 Delete any order (admin privilege)
         public async Task DeleteOrderAsAdminAsync(int id)
         {
             await _orderRepo.DeleteOrderAsAdminAsync(id);

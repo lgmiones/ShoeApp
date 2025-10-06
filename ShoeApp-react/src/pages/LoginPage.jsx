@@ -1,33 +1,39 @@
+// Import React hooks and dependencies
 import { useEffect, useState } from "react";
 import { login, register } from "../services/auth";
 import { toast } from "react-toastify";
 
 export default function LoginPage() {
-  const [mode, setMode] = useState("login"); // 'login' | 'register'
+  // ---------- STATE MANAGEMENT ----------
+
+  const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [busy, setBusy] = useState(false);
   const [touched, setTouched] = useState({});
 
-  // clear fields when switching modes
+  // ---------- EFFECT: Reset fields when switching between login/register ----------
   useEffect(() => {
     setEmail("");
     setPassword("");
     setTouched({});
   }, [mode]);
 
+  // ---------- VALIDATION LOGIC ----------
   const emailErr =
     touched.email && !/^\S+@\S+\.\S+$/.test(email || "")
-      ? "Enter a valid email."
+      ? "Enter a valid email." // Email format check
       : null;
+
   const pwdErr =
     touched.password && (!password || password.length < 6)
-      ? "At least 6 characters."
+      ? "At least 6 characters." // Password length requirement
       : null;
 
   const invalid = Boolean(emailErr || pwdErr);
 
+  // ---------- HANDLE FORM SUBMIT ----------
   async function onSubmit(e) {
     e.preventDefault();
     setTouched({ email: true, password: true });
@@ -36,32 +42,37 @@ export default function LoginPage() {
     setBusy(true);
     try {
       if (mode === "login") {
+        // When in login mode, call login() API
         await login({ email, password });
         toast.success("Welcome back 👟");
       } else {
-        await register({ email, password }); // role not sent -> Customer by default
+        // When in register mode, call register() API
+        await register({ email, password }); // Default role: Customer
         toast.success("Account created! You’re signed in.");
       }
-      location.href = "/"; // go home
+      setTimeout(() => {
+        location.href = "/";
+      }, 1000); // 1.5 seconds delay (adjust if you want)
     } catch {
-      // errors are already toasted by axios interceptor
     } finally {
       setBusy(false);
     }
   }
 
+  // ---------- PAGE STRUCTURE / JSX UI ----------
   return (
     <div className="min-h-screen w-full relative overflow-hidden">
-      {/* Soft gradient background */}
+      {/* Soft gradient background for aesthetic look */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-200 via-indigo-100 to-white" />
-      {/* Floating blobs for depth */}
+
+      {/* Decorative floating gradient blobs */}
       <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-indigo-300/30 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-blue-300/30 blur-3xl" />
 
       <div className="relative mx-auto grid min-h-screen max-w-7xl place-items-center px-4">
-        {/* Card */}
+        {/* Card Container */}
         <div className="w-full max-w-md rounded-3xl border border-white/40 bg-white/70 p-6 shadow-xl backdrop-blur-md transition motion-safe:hover:shadow-2xl">
-          {/* Brand */}
+          {/* Brand Header */}
           <div className="mb-5 flex items-center justify-center gap-2">
             <div className="h-9 w-9 rounded-2xl bg-black/90 text-white grid place-items-center">
               <span className="text-sm font-bold">zF</span>
@@ -71,7 +82,9 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {/* Login/Register Toggle Buttons */}
           <div className="mb-4 flex rounded-xl bg-gray-100 p-1">
+            {/* Login Tab */}
             <button
               className={`flex-1 rounded-lg px-3 py-2 text-sm transition ${
                 mode === "login"
@@ -83,6 +96,8 @@ export default function LoginPage() {
             >
               Sign in
             </button>
+
+            {/* Register Tab */}
             <button
               className={`flex-1 rounded-lg px-3 py-2 text-sm transition ${
                 mode === "register"
@@ -96,8 +111,9 @@ export default function LoginPage() {
             </button>
           </div>
 
+          {/* ---------- FORM SECTION ---------- */}
           <form onSubmit={onSubmit} className="space-y-4">
-            {/* Email */}
+            {/* Email Field */}
             <div>
               <label
                 htmlFor="email"
@@ -114,8 +130,8 @@ export default function LoginPage() {
                   emailErr ? "border-red-300" : "border-gray-300"
                 }`}
                 value={email}
-                onBlur={() => setTouched((t) => ({ ...t, email: true }))}
-                onChange={(e) => setEmail(e.target.value)}
+                onBlur={() => setTouched((t) => ({ ...t, email: true }))} // Marks input as touched
+                onChange={(e) => setEmail(e.target.value)} // Updates state
                 placeholder="you@example.com"
               />
               {emailErr && (
@@ -123,7 +139,7 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* Password */}
+            {/* Password Field */}
             <div>
               <label
                 htmlFor="password"
@@ -138,7 +154,7 @@ export default function LoginPage() {
               >
                 <input
                   id="password"
-                  type={showPwd ? "text" : "password"}
+                  type={showPwd ? "text" : "password"} // Toggle password visibility
                   autoComplete={
                     mode === "login" ? "current-password" : "new-password"
                   }
@@ -150,6 +166,7 @@ export default function LoginPage() {
                     mode === "login" ? "Your password" : "Create a password"
                   }
                 />
+                {/* Show/Hide Password Button */}
                 <button
                   type="button"
                   className="ml-2 rounded-lg px-2 py-1 text-xs text-gray-600 hover:bg-gray-100"
@@ -159,6 +176,8 @@ export default function LoginPage() {
                   {showPwd ? "Hide" : "Show"}
                 </button>
               </div>
+
+              {/* Error / Helper Texts */}
               {pwdErr && <p className="mt-1 text-xs text-red-600">{pwdErr}</p>}
               {mode === "register" && (
                 <p className="mt-1 text-xs text-gray-500">
@@ -168,9 +187,9 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* Submit */}
+            {/* ---------- SUBMIT BUTTON ---------- */}
             <button
-              disabled={busy}
+              disabled={busy} // Disabled while submitting
               className="group relative mt-2 w-full rounded-xl bg-blue-600 py-2 text-white transition disabled:opacity-60 hover:bg-blue-600/90"
             >
               <span className="relative z-10">
@@ -180,11 +199,12 @@ export default function LoginPage() {
                   ? "Login"
                   : "Create account"}
               </span>
+              {/* Gradient hover glow */}
               <span className="absolute inset-0 -z-0 rounded-xl bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-500 opacity-0 blur transition group-hover:opacity-40" />
             </button>
           </form>
 
-          {/* Tiny helper text */}
+          {/* ---------- MODE SWITCH LINKS ---------- */}
           <div className="mt-4 text-center text-xs text-gray-500">
             {mode === "login" ? (
               <button className="underline" onClick={() => setMode("register")}>

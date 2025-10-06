@@ -1,15 +1,20 @@
-// src/components/Navbar.jsx
-import { Link, NavLink } from "react-router-dom";
-import { useAuth } from "../state/AuthContext";
-import { useCart } from "../state/CartContext";
-import { ShoeIcon, CartIcon, OrderIcon } from "./art/Icons";
+// Import necessary modules and hooks
+import { Link, NavLink } from "react-router-dom"; // For navigation and highlighting active links
+import { useAuth } from "../state/AuthContext"; // Custom hook to access authentication state (login/logout)
+import { useCart } from "../state/CartContext"; // Custom hook to access cart state (items count)
+import { ShoeIcon, CartIcon, OrderIcon } from "./art/Icons"; // Reusable SVG icons for UI
 
+// Sub-component: Displays an icon (like cart) with a small badge showing item count
 function CartWithBadge({ children, count = 0 }) {
   return (
     <span className="relative inline-flex items-center">
+      {/* The icon passed as 'children' (like <CartIcon />) */}
       {children}
+
+      {/* If cart count > 0, show a small badge */}
       {count > 0 && (
         <span className="absolute -right-1 -top-1 min-w-[18px] h-[18px] rounded-full bg-blue-600 text-white text-[10px] leading-[18px] text-center px-[4px]">
+          {/* If count exceeds 99, display "99+" */}
           {count > 99 ? "99+" : count}
         </span>
       )}
@@ -17,66 +22,90 @@ function CartWithBadge({ children, count = 0 }) {
   );
 }
 
+// Main Navbar component
 export default function Navbar() {
+  // Get authentication state (logged in or not)
   const { isAuthed, email, logout } = useAuth();
-  const cartCtx = useCart();
-  const count = cartCtx?.count ?? 0; // ← use the cart context safely
 
+  // Access cart context safely
+  const cartCtx = useCart();
+  const count = cartCtx?.count ?? 0; // Default to 0 if cart context is undefined
+
+  // Base CSS for nav buttons (Tailwind utility classes)
   const base =
     "relative inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm transition-colors " +
     "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60";
+
+  // Style for inactive links
   const idle = "text-gray-700 hover:text-blue-700";
+
+  // Style for the active link (adds highlight and underline effect)
   const active =
     "text-blue-700 bg-white shadow border border-white/60 " +
     "after:absolute after:inset-x-3 after:-bottom-[6px] after:h-[3px] after:rounded-full after:bg-blue-500/70";
 
+  // Function to toggle styles based on whether a link is active
   const linkClass = ({ isActive }) => `${base} ${isActive ? active : idle}`;
 
   return (
+    // Sticky header stays on top when scrolling
     <header className="sticky top-0 z-40">
+      {/* Top gradient line for visual separation */}
       <div className="h-[1px] w-full bg-gradient-to-r from-blue-200 via-indigo-200 to-blue-200/60" />
+
+      {/* Main navbar container with blur and light background */}
       <div className="backdrop-blur-md bg-white/70 border-b border-white/40 shadow-sm">
         <div className="mx-auto max-w-6xl px-4">
           <div className="flex h-14 items-center justify-between gap-3">
-            {/* Brand */}
+            {/* ----------- Brand / Logo Section ----------- */}
             <Link
               to="/"
               className="group inline-flex items-center gap-2 rounded-2xl"
               aria-label="zFlipsters home"
             >
+              {/* Small black box logo with initials */}
               <div className="grid h-8 w-8 place-items-center rounded-xl bg-black text-white">
                 <span className="text-xs font-bold">zF</span>
               </div>
+              {/* Brand name text */}
               <span className="text-lg font-semibold tracking-tight text-gray-900 group-hover:opacity-90">
                 zFlipsters
               </span>
             </Link>
 
-            {/* Desktop nav with icons */}
+            {/* ----------- Desktop Navigation ----------- */}
             <nav className="hidden sm:flex items-center gap-1 rounded-2xl bg-gray-100 p-1">
+              {/* Shoes link */}
               <NavLink to="/" className={linkClass} end>
                 <ShoeIcon />
                 <span>Shoes</span>
               </NavLink>
+
+              {/* Cart link with badge */}
               <NavLink to="/cart" className={linkClass}>
                 <CartWithBadge count={count}>
                   <CartIcon />
                 </CartWithBadge>
                 <span>Cart</span>
               </NavLink>
+
+              {/* Orders link */}
               <NavLink to="/orders" className={linkClass}>
                 <OrderIcon />
                 <span>Orders</span>
               </NavLink>
             </nav>
 
-            {/* Auth */}
+            {/* ----------- Authentication Section ----------- */}
             <div className="flex items-center gap-2">
               {isAuthed ? (
                 <>
+                  {/* Display logged-in user's email */}
                   <span className="hidden sm:inline-flex items-center rounded-xl border border-white/60 bg-white px-3 py-1 text-sm text-gray-700 shadow">
                     {email}
                   </span>
+
+                  {/* Logout button */}
                   <button
                     onClick={logout}
                     className="rounded-xl bg-blue-600 px-3 py-1.5 text-sm text-white transition hover:bg-blue-600/90"
@@ -86,6 +115,7 @@ export default function Navbar() {
                   </button>
                 </>
               ) : (
+                // Login button (shown if not authenticated)
                 <NavLink
                   to="/login"
                   className="rounded-xl bg-blue-600 px-3 py-1.5 text-sm text-white transition hover:bg-blue-600/90"
@@ -96,7 +126,7 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Mobile nav with icons */}
+          {/* ----------- Mobile Navigation ----------- */}
           <nav className="sm:hidden pb-3 pt-1">
             <div className="flex gap-2 overflow-x-auto rounded-2xl bg-gray-100 p-1">
               <NavLink to="/" className={linkClass} end>

@@ -2,13 +2,14 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { isAuthed, me, logout as doLogout, getRoles } from "../services/auth";
 
 const AuthCtx = createContext(null);
+
 export function AuthProvider({ children }) {
   const [ready, setReady] = useState(false);
   const [email, setEmail] = useState(localStorage.getItem("email") || "");
   const [roles, setRoles] = useState(getRoles());
 
+  // 🔄 useEffect runs once when the app loads
   useEffect(() => {
-    // try to refresh session on load (if token exists)
     (async () => {
       try {
         if (isAuthed()) {
@@ -16,13 +17,15 @@ export function AuthProvider({ children }) {
           setEmail(info.email || "");
           setRoles(info.roles || []);
         }
-      } catch {
-        /* handled by axios */
-      }
+      } catch {}
       setReady(true);
     })();
   }, []);
 
+  /**
+   * 🧩 value object - This stores the authentication data and functions that
+   * other components can access using the `useAuth()` hook.
+   */
   const value = {
     ready,
     email,
@@ -38,6 +41,10 @@ export function AuthProvider({ children }) {
 
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }
+
+// 🎯 Custom hook for consuming authentication context easily
 export function useAuth() {
   return useContext(AuthCtx);
 }
+
+//AuthContext.jsx is responsible for managing user login state and authentication across my entire React
