@@ -1,4 +1,3 @@
-// Import React hooks for state and lifecycle management
 import { useEffect, useMemo, useState } from "react";
 
 // Import custom components for UI and modals
@@ -25,14 +24,14 @@ import { useCart } from "../state/CartContext";
 
 export default function ShoesPage() {
   // ---------------- State variables ----------------
-  const [shoes, setShoes] = useState(null); // List of shoes
-  const [query, setQuery] = useState(""); // Search input
-  const [openForm, setOpenForm] = useState(false); // Shoe form modal visibility
-  const [editing, setEditing] = useState(null); // Shoe being edited
-  const [deleting, setDeleting] = useState(null); // Shoe being deleted
-  const [openQuantity, setOpenQuantity] = useState(false); // Quantity modal visibility
-  const [selectedShoe, setSelectedShoe] = useState(null); // Shoe selected for adding to cart
-  const [quantity, setQuantity] = useState(1); // Quantity to add to cart
+  const [shoes, setShoes] = useState(null);
+  const [query, setQuery] = useState("");
+  const [openForm, setOpenForm] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [deleting, setDeleting] = useState(null);
+  const [openQuantity, setOpenQuantity] = useState(false);
+  const [selectedShoe, setSelectedShoe] = useState(null);
+  const [quantity, setQuantity] = useState(1);
 
   // Hooks for authentication (check if admin) and cart (update cart count)
   const { isAdmin } = useAuth();
@@ -43,17 +42,31 @@ export default function ShoesPage() {
   // ---------------- Fetch all shoes ----------------
   const fetchShoes = async () => {
     try {
-      const list = await getShoes(); // Fetch shoes from API
-      setShoes(Array.isArray(list) ? list : []); // Store result in state
+      const list = await getShoes();
+      setShoes(Array.isArray(list) ? list : []);
     } catch (e) {
       console.error("Failed to load shoes:", e);
-      setShoes([]); // Show empty list if error occurs
+      setShoes([]);
     }
   };
 
   // Fetch shoes once when component loads
   useEffect(() => {
     fetchShoes();
+  }, []);
+
+  // ✅ Show toast message after login/register redirect
+  useEffect(() => {
+    const msg = localStorage.getItem("toastMessage");
+    if (msg) {
+      const timer = setTimeout(() => {
+        success(msg); // show toast after delay
+        localStorage.removeItem("toastMessage"); // clear message
+      }, 100); // adds delay
+
+      // Cleanup timer if component unmounts before timeout
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   // ---------------- Filter shoes based on search ----------------
@@ -79,7 +92,7 @@ export default function ShoesPage() {
     }
     setOpenForm(false);
     setEditing(null);
-    await fetchShoes(); // Refresh list after update
+    await fetchShoes();
   };
 
   // ---------------- Delete a shoe ----------------
@@ -101,7 +114,6 @@ export default function ShoesPage() {
     }
   };
 
-  // Show loading indicator while data is being fetched
   if (shoes === null) return <Loading />;
 
   return (

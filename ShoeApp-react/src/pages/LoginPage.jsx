@@ -50,9 +50,14 @@ export default function LoginPage() {
         await register({ email, password }); // Default role: Customer
         toast.success("Account created! You’re signed in.");
       }
-      setTimeout(() => {
-        location.href = "/";
-      }, 1000); // 1.5 seconds delay (adjust if you want)
+      localStorage.setItem(
+        "toastMessage",
+        mode === "login"
+          ? "Welcome back 👟, Enjoy Shopping!"
+          : "Account created! You’re signed in."
+      );
+
+      location.href = "/";
     } catch {
     } finally {
       setBusy(false);

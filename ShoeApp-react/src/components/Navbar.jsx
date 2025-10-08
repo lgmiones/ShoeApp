@@ -1,8 +1,7 @@
-// Import necessary modules and hooks
-import { Link, NavLink } from "react-router-dom"; // For navigation and highlighting active links
-import { useAuth } from "../state/AuthContext"; // Custom hook to access authentication state (login/logout)
-import { useCart } from "../state/CartContext"; // Custom hook to access cart state (items count)
-import { ShoeIcon, CartIcon, OrderIcon } from "./art/Icons"; // Reusable SVG icons for UI
+import { Link, NavLink } from "react-router-dom";
+import { useAuth } from "../state/AuthContext";
+import { useCart } from "../state/CartContext";
+import { ShoeIcon, CartIcon, OrderIcon } from "./art/Icons";
 
 // Sub-component: Displays an icon (like cart) with a small badge showing item count
 function CartWithBadge({ children, count = 0 }) {
@@ -24,31 +23,24 @@ function CartWithBadge({ children, count = 0 }) {
 
 // Main Navbar component
 export default function Navbar() {
-  // Get authentication state (logged in or not)
   const { isAuthed, email, logout } = useAuth();
 
-  // Access cart context safely
   const cartCtx = useCart();
-  const count = cartCtx?.count ?? 0; // Default to 0 if cart context is undefined
+  const count = cartCtx?.count ?? 0;
 
-  // Base CSS for nav buttons (Tailwind utility classes)
   const base =
     "relative inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm transition-colors " +
     "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60";
 
-  // Style for inactive links
   const idle = "text-gray-700 hover:text-blue-700";
 
-  // Style for the active link (adds highlight and underline effect)
   const active =
     "text-blue-700 bg-white shadow border border-white/60 " +
     "after:absolute after:inset-x-3 after:-bottom-[6px] after:h-[3px] after:rounded-full after:bg-blue-500/70";
 
-  // Function to toggle styles based on whether a link is active
   const linkClass = ({ isActive }) => `${base} ${isActive ? active : idle}`;
 
   return (
-    // Sticky header stays on top when scrolling
     <header className="sticky top-0 z-40">
       {/* Top gradient line for visual separation */}
       <div className="h-[1px] w-full bg-gradient-to-r from-blue-200 via-indigo-200 to-blue-200/60" />

@@ -23,18 +23,16 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Configure Identity with int keys for users/roles
 builder.Services.AddIdentityCore<AppUser>(opt =>
 {
-    // Simplified password rules for demo (can be stricter in prod)
     opt.Password.RequiredLength = 6;
     opt.Password.RequireNonAlphanumeric = false;
     opt.Password.RequireUppercase = false;
 })
-    .AddRoles<IdentityRole<int>>()              // Add support for roles (Admin/Customer)
-    .AddEntityFrameworkStores<AppDbContext>()   // Store identity data in EF Core tables
-    .AddSignInManager<SignInManager<AppUser>>() // Provides login/sign-in APIs
-    .AddDefaultTokenProviders();                // Enables tokens (e.g., password reset)
+    .AddRoles<IdentityRole<int>>()
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddSignInManager<SignInManager<AppUser>>()
+    .AddDefaultTokenProviders();
 
 // -------------------- JWT AUTHENTICATION --------------------
-// Get JWT settings from appsettings.json
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSection["Key"]!));
 
@@ -52,7 +50,7 @@ builder.Services
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = key,
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero // No extra leeway for expired tokens
+            ClockSkew = TimeSpan.Zero
         };
     });
 
@@ -138,7 +136,7 @@ using (var scope = app.Services.CreateScope())
             await roleMgr.CreateAsync(new IdentityRole<int>(roleName));
     }
 
-    var adminEmail = "admin@shoes.local";
+    var adminEmail = "admin@shoes.local"; //defaul admin email
     var admin = await userMgr.FindByEmailAsync(adminEmail);
     if (admin == null)
     {
